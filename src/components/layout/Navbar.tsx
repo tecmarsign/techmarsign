@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, GraduationCap, Search, Bell, ChevronDown } from "lucide-react";
+import { Menu, X, GraduationCap, Search, Bell, ChevronDown, User } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,6 +27,8 @@ export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -114,14 +117,28 @@ export function Navbar() {
               <span className="absolute top-1 right-1 w-2 h-2 bg-destructive rounded-full" />
             </button>
             <div className="w-px h-6 bg-border mx-2" />
-            <Button
-              variant="outline"
-              size="sm"
-              className="rounded-full font-medium border-secondary text-secondary hover:bg-secondary hover:text-secondary-foreground"
-              asChild
-            >
-              <Link to="/login">Login / Register</Link>
-            </Button>
+            {user ? (
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-full font-medium border-secondary text-secondary hover:bg-secondary hover:text-secondary-foreground"
+                asChild
+              >
+                <Link to="/dashboard">
+                  <User className="mr-1 h-4 w-4" />
+                  Dashboard
+                </Link>
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-full font-medium border-secondary text-secondary hover:bg-secondary hover:text-secondary-foreground"
+                asChild
+              >
+                <Link to="/auth">Login / Register</Link>
+              </Button>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -155,15 +172,28 @@ export function Navbar() {
                 </Link>
               ))}
               <div className="flex flex-col gap-2 pt-4 mt-2 border-t border-border">
-                <Button
-                  variant="outline"
-                  asChild
-                  className="w-full rounded-full border-secondary text-secondary"
-                >
-                  <Link to="/login" onClick={() => setIsOpen(false)}>
-                    Login / Register
-                  </Link>
-                </Button>
+                {user ? (
+                  <Button
+                    variant="outline"
+                    asChild
+                    className="w-full rounded-full border-secondary text-secondary"
+                  >
+                    <Link to="/dashboard" onClick={() => setIsOpen(false)}>
+                      <User className="mr-1 h-4 w-4" />
+                      Dashboard
+                    </Link>
+                  </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    asChild
+                    className="w-full rounded-full border-secondary text-secondary"
+                  >
+                    <Link to="/auth" onClick={() => setIsOpen(false)}>
+                      Login / Register
+                    </Link>
+                  </Button>
+                )}
               </div>
             </div>
           </div>
