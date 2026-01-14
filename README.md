@@ -1,73 +1,72 @@
-# Welcome to your Lovable project
+# Tecmarsign Academy
 
-## Project info
+A full-featured education platform for marketing courses, handling enrollment, and managing learning operations. Supports Tech, Marketing, and Design courses with online and offline learning options.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## Features
 
-## How can I edit this code?
+- **Course Management**: Browse and enroll in courses across Tech, Marketing, and Design categories
+- **Role-Based Dashboards**: Separate dashboards for Admin, Student, and Tutor roles
+- **Phase-Based Learning**: Courses structured in phases with lessons, assignments, and materials
+- **Enrollment System**: Secure enrollment with payment status tracking
+- **Assignment Submissions**: Students submit work, tutors grade and provide feedback
+- **Progress Tracking**: Track lesson completion and course progress
 
-There are several ways of editing your application.
+## Tech Stack
 
-**Use Lovable**
+- **Frontend**: React 18, TypeScript, Vite
+- **Styling**: Tailwind CSS, shadcn/ui
+- **Backend**: Lovable Cloud (Supabase)
+- **State Management**: TanStack React Query
+- **Routing**: React Router DOM
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+## Getting Started
 
-Changes made via Lovable will be committed automatically to this repo.
+### Prerequisites
 
-**Use your preferred IDE**
+- Node.js 18+ and npm
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+### Installation
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
+# Clone the repository
 git clone <YOUR_GIT_URL>
 
-# Step 2: Navigate to the project directory.
+# Navigate to project directory
 cd <YOUR_PROJECT_NAME>
 
-# Step 3: Install the necessary dependencies.
-npm i
+# Install dependencies
+npm install
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Start development server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+## Project Structure
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```
+src/
+├── components/
+│   ├── admin/       # Admin dashboard components
+│   ├── courses/     # Course display and enrollment
+│   ├── dashboard/   # Role-based dashboards
+│   ├── home/        # Landing page sections
+│   ├── layout/      # Navbar, Footer, PageLayout
+│   ├── student/     # Student learning components
+│   ├── tutor/       # Tutor management components
+│   └── ui/          # shadcn/ui components
+├── hooks/           # Custom React hooks
+├── pages/           # Route pages
+└── integrations/    # Backend integrations
+```
 
-**Use GitHub Codespaces**
+## Deployment
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Open [Lovable](https://lovable.dev) and click Share → Publish to deploy your app.
 
-## What technologies are used for this project?
+## Custom Domain
 
-This project is built with:
+To connect a custom domain, navigate to Project > Settings > Domains in Lovable.
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## License
 
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Proprietary - Tecmarsign Academy
