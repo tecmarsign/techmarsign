@@ -15,11 +15,11 @@ jobs:
           npm install
           npm run build
           
-      - name: Upload to Hostinger
+  - name: Upload to Hostinger
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: ./dist/  # GitHub looks for the 'dist' folder created by 'npm run build'
+          local-dir: ./dist/   # This tells GitHub to find the built files
           server-dir: ./public_html/
