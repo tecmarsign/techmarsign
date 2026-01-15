@@ -14,11 +14,10 @@ jobs:
           npm install
           npm run build
           
-      - name: Sync to Hostinger
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: ./dist/
-          server-dir: ./public_html/
+      - name: Deploy to main branch
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add -f dist/
+          git commit -m "Build output - $(date +'%Y-%m-%d %H:%M:%S')" || echo "No changes to commit"
+          git push origin main
