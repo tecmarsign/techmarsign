@@ -18,10 +18,8 @@ const navLinks = [
 ];
 
 const courseCategories = [
-  { name: "Web Development", path: "/courses?category=web" },
-  { name: "AI & Technology", path: "/courses?category=ai" },
+  { name: "Technology", path: "/courses?category=technology" },
   { name: "Digital Marketing", path: "/courses?category=marketing" },
-  { name: "Graphic Design", path: "/courses?category=design" },
   { name: "Beauty & Cosmetology", path: "/courses?category=beauty" },
   { name: "Business & Finance", path: "/courses?category=business" },
 ];
