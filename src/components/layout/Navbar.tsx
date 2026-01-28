@@ -8,6 +8,9 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
 } from "@/components/ui/dropdown-menu";
 
 const navLinks = [
@@ -17,8 +20,13 @@ const navLinks = [
   { name: "Contact", path: "/contact", hasDropdown: false },
 ];
 
+const technologySubCategories = [
+  { name: "Web Development", path: "/courses?category=web" },
+  { name: "Graphic Design", path: "/courses?category=design" },
+  { name: "AI & Machine Learning", path: "/courses?category=ai" },
+];
+
 const courseCategories = [
-  { name: "Technology", path: "/courses?category=technology" },
   { name: "Digital Marketing", path: "/courses?category=marketing" },
   { name: "Beauty & Cosmetology", path: "/courses?category=beauty" },
   { name: "Business & Finance", path: "/courses?category=business" },
@@ -78,8 +86,36 @@ export function Navbar() {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent
                     align="center"
-                    className="z-50 bg-card border border-border shadow-lg rounded-xl mt-2"
+                    className="z-50 bg-card border border-border shadow-lg rounded-xl mt-2 min-w-[200px]"
                   >
+                    {/* Technology with sub-menu */}
+                    <DropdownMenuSub>
+                      <DropdownMenuSubTrigger className="cursor-pointer px-4 py-2 hover:bg-muted rounded-lg">
+                        Technology
+                      </DropdownMenuSubTrigger>
+                      <DropdownMenuSubContent className="z-50 bg-card border border-border shadow-lg rounded-xl min-w-[180px]">
+                        <DropdownMenuItem asChild>
+                          <Link
+                            to="/courses?category=technology"
+                            className="cursor-pointer px-4 py-2 hover:bg-muted rounded-lg"
+                          >
+                            All Technology
+                          </Link>
+                        </DropdownMenuItem>
+                        {technologySubCategories.map((sub) => (
+                          <DropdownMenuItem key={sub.path} asChild>
+                            <Link
+                              to={sub.path}
+                              className="cursor-pointer px-4 py-2 hover:bg-muted rounded-lg"
+                            >
+                              {sub.name}
+                            </Link>
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuSubContent>
+                    </DropdownMenuSub>
+                    
+                    {/* Other categories */}
                     {courseCategories.map((category) => (
                       <DropdownMenuItem key={category.path} asChild>
                         <Link
