@@ -28,24 +28,19 @@ const values = [
 
 const team = [
   {
-    name: "Sarah Johnson",
+    name: "Carol Githinji",
     role: "Founder & CEO",
-    bio: "Former Google engineer with 15+ years in tech education.",
+    bio: "Visionary leader with a passion for transforming tech education in Kenya.",
   },
   {
-    name: "Michael Chen",
-    role: "Head of Curriculum",
-    bio: "EdTech specialist who has designed courses for 50k+ students.",
-  },
-  {
-    name: "Emily Rodriguez",
-    role: "Director of Student Success",
-    bio: "Career coach with experience placing 1000+ graduates.",
-  },
-  {
-    name: "David Kim",
+    name: "Glen Mboroki",
     role: "Lead Instructor - Web Dev",
-    bio: "Full-stack developer with experience at top startups.",
+    bio: "Full-stack developer with expertise in modern web technologies.",
+  },
+  {
+    name: "Brian",
+    role: "Director of Student Success",
+    bio: "Dedicated to ensuring every student achieves their career goals.",
   },
 ];
 
