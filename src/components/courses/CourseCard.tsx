@@ -27,7 +27,7 @@ export function CourseCard({ course, variant = "full" }: CourseCardProps) {
             </div>
             {course.price && (
               <Badge variant="secondary">
-                ${course.price}
+                KSH {course.price.toLocaleString()}
               </Badge>
             )}
           </div>
@@ -90,7 +90,7 @@ export function CourseCard({ course, variant = "full" }: CourseCardProps) {
           {course.price && (
             <div className="flex items-center gap-2">
               <Badge variant="secondary" className="text-base">
-                ${course.price}
+                KSH {course.price.toLocaleString()}
               </Badge>
             </div>
           )}
@@ -120,7 +120,7 @@ export function CourseCard({ course, variant = "full" }: CourseCardProps) {
                           <Badge variant="outline">{phase.duration}</Badge>
                         )}
                         {phase.price && (
-                          <Badge variant="secondary">${phase.price}</Badge>
+                          <Badge variant="secondary">KSH {phase.price.toLocaleString()}</Badge>
                         )}
                       </div>
                     </div>
