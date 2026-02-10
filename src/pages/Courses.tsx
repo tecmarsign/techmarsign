@@ -2,7 +2,7 @@ import { PageLayout } from "@/components/layout/PageLayout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   ArrowRight,
   Monitor,
@@ -12,9 +12,25 @@ import {
 } from "lucide-react";
 import { useCourses } from "@/hooks/useCourses";
 import { CourseCard } from "@/components/courses/CourseCard";
+import { useMemo } from "react";
 
 export default function Courses() {
   const { courses, loading } = useCourses();
+  const [searchParams] = useSearchParams();
+  const categoryFilter = searchParams.get("category");
+
+  const filteredCourses = useMemo(() => {
+    if (!categoryFilter) return courses;
+    return courses.filter(
+      (c) => c.category.toLowerCase() === categoryFilter.toLowerCase()
+    );
+  }, [courses, categoryFilter]);
+
+  const defaultTab = filteredCourses[0]?.id;
+
+  const pageTitle = categoryFilter
+    ? filteredCourses[0]?.category || categoryFilter
+    : "Our Programs";
 
   return (
     <PageLayout>
@@ -23,14 +39,14 @@ export default function Courses() {
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center">
             <Badge variant="secondary" className="mb-4">
-              Our Programs
+              {pageTitle}
             </Badge>
             <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-6">
               Transform Your Career with{" "}
               <span className="text-secondary">Industry-Ready</span> Skills
             </h1>
             <p className="text-lg text-muted-foreground mb-8">
-              Choose from our comprehensive courses in Technology, Marketing, and Design. 
+              Choose from our comprehensive courses in Technology, Marketing, Beauty, and Business.
               Each program is designed to take you from beginner to job-ready professional.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -74,6 +90,17 @@ export default function Courses() {
         </div>
       </section>
 
+      {/* Category Filter */}
+      {categoryFilter && (
+        <section className="pt-8">
+          <div className="container mx-auto px-4 flex justify-center">
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/courses">← View All Courses</Link>
+            </Button>
+          </div>
+        </section>
+      )}
+
       {/* Courses Detail */}
       <section id="courses" className="py-20 lg:py-28">
         <div className="container mx-auto px-4">
@@ -81,7 +108,7 @@ export default function Courses() {
             <div className="flex items-center justify-center py-20">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
-          ) : courses.length === 0 ? (
+          ) : filteredCourses.length === 0 ? (
             <div className="text-center py-20">
               <BookOpen className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
               <h3 className="text-xl font-semibold text-foreground mb-2">
@@ -92,9 +119,9 @@ export default function Courses() {
               </p>
             </div>
           ) : (
-            <Tabs defaultValue={courses[0]?.id} className="space-y-12">
+            <Tabs defaultValue={defaultTab} className="space-y-12">
               <TabsList className="flex flex-wrap justify-center gap-2 bg-transparent h-auto p-0">
-                {courses.map((course) => (
+                {filteredCourses.map((course) => (
                   <TabsTrigger
                     key={course.id}
                     value={course.id}
@@ -106,7 +133,7 @@ export default function Courses() {
                 ))}
               </TabsList>
 
-              {courses.map((course) => (
+              {filteredCourses.map((course) => (
                 <TabsContent key={course.id} value={course.id}>
                   <CourseCard course={course} variant="full" />
                 </TabsContent>
