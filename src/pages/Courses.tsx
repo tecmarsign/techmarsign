@@ -12,12 +12,18 @@ import {
 } from "lucide-react";
 import { useCourses } from "@/hooks/useCourses";
 import { CourseCard } from "@/components/courses/CourseCard";
+import { CourseDetailView } from "@/components/courses/CourseDetailView";
 import { useMemo } from "react";
+
+function slugify(text: string) {
+  return text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+}
 
 export default function Courses() {
   const { courses, loading } = useCourses();
   const [searchParams] = useSearchParams();
   const categoryFilter = searchParams.get("category");
+  const courseFilter = searchParams.get("course");
 
   const filteredCourses = useMemo(() => {
     if (!categoryFilter) return courses;
@@ -26,11 +32,41 @@ export default function Courses() {
     );
   }, [courses, categoryFilter]);
 
+  // Find a specific course by slug match
+  const selectedCourse = useMemo(() => {
+    if (!courseFilter) return null;
+    return courses.find(
+      (c) => slugify(c.title) === courseFilter.toLowerCase()
+    ) || null;
+  }, [courses, courseFilter]);
+
   const defaultTab = filteredCourses[0]?.id;
 
-  const pageTitle = categoryFilter
-    ? filteredCourses[0]?.category || categoryFilter
-    : "Our Programs";
+  const pageTitle = selectedCourse
+    ? selectedCourse.title
+    : categoryFilter
+      ? filteredCourses[0]?.category || categoryFilter
+      : "Our Programs";
+
+  // If a specific course is selected, show the detail view
+  if (!loading && selectedCourse) {
+    return (
+      <PageLayout>
+        <section className="py-8">
+          <div className="container mx-auto px-4">
+            <Button variant="ghost" size="sm" asChild className="mb-4">
+              <Link to="/courses">← All Courses</Link>
+            </Button>
+          </div>
+        </section>
+        <section className="pb-20 lg:pb-28">
+          <div className="container mx-auto px-4">
+            <CourseDetailView course={selectedCourse} />
+          </div>
+        </section>
+      </PageLayout>
+    );
+  }
 
   return (
     <PageLayout>

@@ -21,15 +21,15 @@ const navLinks = [
 ];
 
 const technologySubCategories = [
-  { name: "Web Development", path: "/courses?category=Technology&course=web-development" },
-  { name: "Graphic Design", path: "/courses?category=Technology&course=graphic-design" },
-  { name: "AI", path: "/courses?category=Technology&course=ai" },
+  { name: "Web Development", path: "/courses?course=web-development" },
+  { name: "Graphic Design", path: "/courses?course=graphic-design" },
+  { name: "AI", path: "/courses?course=ai" },
 ];
 
 const courseCategories = [
-  { name: "Digital Marketing", path: "/courses?category=Marketing" },
-  { name: "Beauty & Cosmetology", path: "/courses?category=Beauty" },
-  { name: "Business & Finance", path: "/courses?category=Business" },
+  { name: "Digital Marketing", path: "/courses?course=digital-marketing" },
+  { name: "Beauty & Cosmetology", path: "/courses?course=beauty-cosmetology" },
+  { name: "Business & Finance", path: "/courses?course=business-finance" },
 ];
 
 export function Navbar() {
