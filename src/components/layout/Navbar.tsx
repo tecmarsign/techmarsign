@@ -23,7 +23,7 @@ const navLinks = [
 const technologySubCategories = [
   { name: "Web Development", path: "/courses?category=web" },
   { name: "Graphic Design", path: "/courses?category=design" },
-  { name: "AI & Machine Learning", path: "/courses?category=ai" },
+  { name: "AI", path: "/courses?category=ai" },
 ];
 
 const courseCategories = [
