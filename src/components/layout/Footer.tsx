@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { GraduationCap, Mail, Phone, MapPin, Facebook, Twitter, Linkedin, Instagram } from "lucide-react";
+import { GraduationCap, Mail, Phone, Facebook, Twitter, Linkedin, Instagram } from "lucide-react";
 
 const footerLinks = {
   courses: [
@@ -97,19 +97,22 @@ export function Footer() {
           <div>
             <h3 className="font-display font-semibold text-lg mb-4">Contact</h3>
             <ul className="space-y-4">
-              <li className="flex items-start gap-3">
-                <MapPin className="h-5 w-5 text-secondary shrink-0 mt-0.5" />
-                <span className="text-primary-foreground/70 text-sm">
-                  123 Tech Hub, Innovation District, City 12345
-                </span>
+              <li className="flex items-center gap-3">
+                <Phone className="h-5 w-5 text-secondary shrink-0" />
+                <a
+                  href="tel:+254748431283"
+                  className="text-primary-foreground/70 hover:text-secondary transition-colors text-sm"
+                >
+                  +254 748 431 283
+                </a>
               </li>
               <li className="flex items-center gap-3">
                 <Phone className="h-5 w-5 text-secondary shrink-0" />
                 <a
-                  href="tel:+1234567890"
+                  href="tel:+254114399034"
                   className="text-primary-foreground/70 hover:text-secondary transition-colors text-sm"
                 >
-                  +1 (234) 567-890
+                  +254 114 399 034
                 </a>
               </li>
               <li className="flex items-center gap-3">

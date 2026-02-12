@@ -10,8 +10,6 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Mail,
   Phone,
-  MapPin,
-  Clock,
   Send,
   MessageSquare,
   HelpCircle,
@@ -20,24 +18,14 @@ import {
 
 const contactInfo = [
   {
-    icon: MapPin,
-    title: "Visit Us",
-    details: ["123 Tech Hub, Innovation District", "City 12345"],
-  },
-  {
     icon: Phone,
     title: "Call Us",
-    details: ["+1 (234) 567-890", "+1 (234) 567-891"],
+    details: ["+254 748 431 283", "+254 114 399 034"],
   },
   {
     icon: Mail,
     title: "Email Us",
     details: ["info@tecmarsign.academy", "admissions@tecmarsign.academy"],
-  },
-  {
-    icon: Clock,
-    title: "Office Hours",
-    details: ["Mon - Fri: 9AM - 6PM", "Sat: 10AM - 2PM"],
   },
 ];
 
@@ -277,17 +265,6 @@ export default function Contact() {
                 </Card>
               ))}
 
-              {/* Map Placeholder */}
-              <Card className="border-border/50 shadow-card overflow-hidden">
-                <div className="aspect-video bg-muted flex items-center justify-center">
-                  <div className="text-center p-8">
-                    <MapPin className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground">
-                      Interactive map will be displayed here
-                    </p>
-                  </div>
-                </div>
-              </Card>
             </div>
           </div>
         </div>
