@@ -170,11 +170,21 @@ export function CourseDetailView({ course }: CourseDetailViewProps) {
               </CardHeader>
               <CardContent className="space-y-6">
                 {course.price && (
-                  <div className="text-center p-4 rounded-xl bg-muted/50">
-                    <p className="text-sm text-muted-foreground mb-1">Full Package</p>
-                    <p className="text-3xl font-bold text-foreground">
-                      KSH {course.price.toLocaleString()}
-                    </p>
+                  <div className="space-y-3">
+                    <div className="text-center p-4 rounded-xl bg-muted/50">
+                      <p className="text-sm text-muted-foreground mb-1">Full Package</p>
+                      <p className="text-3xl font-bold text-foreground">
+                        KSH {course.price.toLocaleString()}
+                      </p>
+                    </div>
+                    {currentPhase?.price && (
+                      <div className="text-center p-3 rounded-xl border border-border">
+                        <p className="text-sm text-muted-foreground mb-1">Per Class</p>
+                        <p className="text-xl font-bold text-foreground">
+                          KSH {currentPhase.price.toLocaleString()}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
 
