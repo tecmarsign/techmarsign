@@ -20,10 +20,11 @@ export function useCourses() {
   const [courses, setCourses] = useState<CourseWithPhases[]>([]);
   const [enrollments, setEnrollments] = useState<EnrollmentWithCourse[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
+  const { user, getToken } = useAuth();
 
   const fetchCourses = async () => {
     try {
+      // Courses are publicly viewable, no auth needed
       const { data, error } = await supabase
         .from("courses")
         .select(`
@@ -35,7 +36,6 @@ export function useCourses() {
 
       if (error) throw error;
       
-      // Sort phases by phase_number
       const coursesWithSortedPhases = (data || []).map(course => ({
         ...course,
         course_phases: (course.course_phases || []).sort((a, b) => a.phase_number - b.phase_number)
@@ -55,16 +55,26 @@ export function useCourses() {
     }
 
     try {
-      const { data, error } = await supabase
-        .from("enrollments")
-        .select(`
-          *,
-          courses (*)
-        `)
-        .eq("student_id", user.id);
+      const token = await getToken();
+      if (!token) {
+        setEnrollments([]);
+        return;
+      }
 
-      if (error) throw error;
-      setEnrollments(data || []);
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/user-data?resource=enrollments-with-courses`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.ok) {
+        const result = await response.json();
+        setEnrollments(result.data || []);
+      }
     } catch (error: any) {
       console.error("Error fetching enrollments:", error);
     }
@@ -88,17 +98,31 @@ export function useCourses() {
     }
 
     try {
-      // Use secure RPC function for enrollment
-      const { data, error } = await supabase
-        .rpc('request_enrollment', { _course_id: courseId });
+      const token = await getToken();
+      if (!token) {
+        toast.error("Authentication error. Please sign in again.");
+        return { success: false, pendingPayment: false };
+      }
 
-      if (error) throw error;
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/enroll`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ courseId }),
+        }
+      );
 
-      // Check if this is a paid course (enrollment created with pending_payment status)
-      const course = courses.find(c => c.id === courseId);
-      const isPaidCourse = course?.price && course.price > 0;
+      const result = await response.json();
 
-      if (isPaidCourse) {
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to enroll");
+      }
+
+      if (result.pendingPayment) {
         toast.info("Enrollment submitted! Your access will be activated after payment confirmation.");
         await fetchEnrollments();
         return { success: true, pendingPayment: true };

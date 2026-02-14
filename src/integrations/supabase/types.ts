@@ -499,17 +499,34 @@ export type Database = {
         Args: { _enrollment_id: string }
         Returns: boolean
       }
-      get_user_role: {
-        Args: { _user_id: string }
-        Returns: Database["public"]["Enums"]["app_role"]
-      }
-      has_role: {
-        Args: {
-          _role: Database["public"]["Enums"]["app_role"]
-          _user_id: string
-        }
-        Returns: boolean
-      }
+      get_user_role:
+        | {
+            Args: { _user_id: string }
+            Returns: {
+              error: true
+            } & "Could not choose the best candidate function between: public.get_user_role(_user_id => text), public.get_user_role(_user_id => uuid). Try renaming the parameters or the function itself in the database so function overloading can be resolved"
+          }
+        | {
+            Args: { _user_id: string }
+            Returns: {
+              error: true
+            } & "Could not choose the best candidate function between: public.get_user_role(_user_id => text), public.get_user_role(_user_id => uuid). Try renaming the parameters or the function itself in the database so function overloading can be resolved"
+          }
+      has_role:
+        | {
+            Args: {
+              _role: Database["public"]["Enums"]["app_role"]
+              _user_id: string
+            }
+            Returns: boolean
+          }
+        | {
+            Args: {
+              _role: Database["public"]["Enums"]["app_role"]
+              _user_id: string
+            }
+            Returns: boolean
+          }
       request_enrollment: { Args: { _course_id: string }; Returns: string }
     }
     Enums: {

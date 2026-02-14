@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+// Data is fetched via edge functions
 import { useAuth } from "@/hooks/useAuth";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,7 +38,7 @@ interface TutorInfo {
 }
 
 export default function StudentDashboard() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, getToken } = useAuth();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
@@ -54,48 +54,56 @@ export default function StudentDashboard() {
   const fetchData = async () => {
     if (!user) return;
 
-    // Fetch profile
-    const { data: profileData } = await supabase
-      .from("profiles")
-      .select("full_name, email, avatar_url")
-      .eq("user_id", user.id)
-      .maybeSingle();
+    try {
+      const token = await getToken();
+      if (!token) {
+        setLoading(false);
+        return;
+      }
 
-    if (profileData) setProfile(profileData);
+      const baseUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/user-data`;
+      const headers = {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      };
 
-    // Fetch enrollments with course info
-    const { data: enrollmentData } = await supabase
-      .from("enrollments")
-      .select(`
-        id,
-        current_phase,
-        status,
-        progress,
-        course:courses(id, title, category, image_url)
-      `)
-      .eq("student_id", user.id);
+      // Fetch profile and enrollments in parallel
+      const [profileRes, enrollmentRes] = await Promise.all([
+        fetch(`${baseUrl}?resource=profile`, { headers }),
+        fetch(`${baseUrl}?resource=enrollments`, { headers }),
+      ]);
 
-    if (enrollmentData) {
-      setEnrollments(enrollmentData as unknown as Enrollment[]);
+      if (profileRes.ok) {
+        const { data: profileData } = await profileRes.json();
+        if (profileData) setProfile(profileData);
+      }
 
-      // Fetch tutors for enrolled courses
-      const courseIds = enrollmentData.map((e: any) => e.course?.id).filter(Boolean);
-      if (courseIds.length > 0) {
-        const { data: tutorData } = await supabase
-          .from("tutor_courses")
-          .select(`
-            tutor_id,
-            profile:profiles!tutor_courses_tutor_id_fkey(full_name, email, avatar_url)
-          `)
-          .in("course_id", courseIds);
+      if (enrollmentRes.ok) {
+        const { data: enrollmentData } = await enrollmentRes.json();
+        if (enrollmentData) {
+          setEnrollments(enrollmentData as unknown as Enrollment[]);
 
-        if (tutorData) {
-          const uniqueTutors = Array.from(
-            new Map((tutorData as unknown as TutorInfo[]).map(t => [t.tutor_id, t])).values()
-          );
-          setTutors(uniqueTutors);
+          // Fetch tutors for enrolled courses
+          const courseIds = enrollmentData.map((e: any) => e.course?.id).filter(Boolean);
+          if (courseIds.length > 0) {
+            const tutorRes = await fetch(
+              `${baseUrl}?resource=tutors&courseIds=${courseIds.join(",")}`,
+              { headers }
+            );
+            if (tutorRes.ok) {
+              const { data: tutorData } = await tutorRes.json();
+              if (tutorData) {
+                const uniqueTutors = Array.from(
+                  new Map((tutorData as unknown as TutorInfo[]).map(t => [t.tutor_id, t])).values()
+                );
+                setTutors(uniqueTutors);
+              }
+            }
+          }
         }
       }
+    } catch (error) {
+      console.error("Error fetching dashboard data:", error);
     }
 
     setLoading(false);
