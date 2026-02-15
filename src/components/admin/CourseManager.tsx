@@ -118,20 +118,46 @@ export function CourseManager() {
   };
 
   const handleSave = async () => {
-    if (!formData.title || !formData.category) {
+    const trimmedTitle = formData.title.trim();
+    const trimmedCategory = formData.category.trim();
+    const trimmedDescription = formData.description.trim();
+    const trimmedDuration = formData.duration.trim();
+    const trimmedImageUrl = formData.image_url.trim();
+
+    if (!trimmedTitle || !trimmedCategory) {
       toast.error("Title and category are required");
+      return;
+    }
+
+    if (trimmedTitle.length > 200) {
+      toast.error("Title is too long (max 200 characters)");
+      return;
+    }
+
+    if (trimmedCategory.length > 100) {
+      toast.error("Category is too long (max 100 characters)");
+      return;
+    }
+
+    if (trimmedDescription && trimmedDescription.length > 10000) {
+      toast.error("Description is too long (max 10,000 characters)");
+      return;
+    }
+
+    if (trimmedImageUrl && !/^https:\/\/.+/.test(trimmedImageUrl)) {
+      toast.error("Image URL must start with https://");
       return;
     }
 
     setSaving(true);
 
     const courseData = {
-      title: formData.title,
-      description: formData.description || null,
-      category: formData.category,
-      duration: formData.duration || null,
+      title: trimmedTitle,
+      description: trimmedDescription || null,
+      category: trimmedCategory,
+      duration: trimmedDuration || null,
       price: formData.price ? parseFloat(formData.price) : null,
-      image_url: formData.image_url || null,
+      image_url: trimmedImageUrl || null,
       is_active: formData.is_active
     };
 

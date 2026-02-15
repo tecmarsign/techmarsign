@@ -154,11 +154,24 @@ export function SubmissionGrader({ courses }: SubmissionGraderProps) {
   const handleGrade = async () => {
     if (!selectedSubmission) return;
 
+    const trimmedFeedback = gradeData.feedback.trim();
+    const maxScore = selectedSubmission.assignment?.max_score || 100;
+
+    if (gradeData.score < 0 || gradeData.score > maxScore) {
+      toast.error(`Score must be between 0 and ${maxScore}`);
+      return;
+    }
+
+    if (trimmedFeedback && trimmedFeedback.length > 5000) {
+      toast.error("Feedback is too long (max 5,000 characters)");
+      return;
+    }
+
     const { error } = await supabase
       .from("assignment_submissions")
       .update({
         score: gradeData.score,
-        feedback: gradeData.feedback.trim() || null,
+        feedback: trimmedFeedback || null,
         status: "graded",
         graded_at: new Date().toISOString()
       })

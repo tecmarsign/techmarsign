@@ -6,25 +6,80 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-async function verifyClerkToken(token: string, secretKey: string) {
-  // Decode JWT to get claims (Clerk tokens are signed, we verify via Clerk API)
-  const response = await fetch("https://api.clerk.com/v1/sessions", {
-    headers: {
-      Authorization: `Bearer ${secretKey}`,
-      "Content-Type": "application/json",
-    },
-  });
+// Cache JWKS keys
+let cachedJwks: any = null;
+let jwksCacheTime = 0;
+const JWKS_CACHE_TTL = 3600000;
 
-  // Decode the JWT payload to get user ID
-  const parts = token.split(".");
-  if (parts.length !== 3) return null;
+async function fetchJwks(issuer: string): Promise<any> {
+  const now = Date.now();
+  if (cachedJwks && now - jwksCacheTime < JWKS_CACHE_TTL) {
+    return cachedJwks;
+  }
+  const res = await fetch(`${issuer}/.well-known/jwks.json`);
+  if (!res.ok) throw new Error("Failed to fetch JWKS");
+  cachedJwks = await res.json();
+  jwksCacheTime = now;
+  return cachedJwks;
+}
 
+function base64UrlDecode(str: string): Uint8Array {
+  const base64 = str.replace(/-/g, "+").replace(/_/g, "/");
+  const padding = "=".repeat((4 - (base64.length % 4)) % 4);
+  const binary = atob(base64 + padding);
+  return Uint8Array.from(binary, (c) => c.charCodeAt(0));
+}
+
+async function verifyClerkJWT(token: string): Promise<string | null> {
   try {
-    const payload = JSON.parse(atob(parts[1]));
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+
+    const headerJson = new TextDecoder().decode(base64UrlDecode(parts[0]));
+    const payloadJson = new TextDecoder().decode(base64UrlDecode(parts[1]));
+    const header = JSON.parse(headerJson);
+    const payload = JSON.parse(payloadJson);
+
+    if (header.alg !== "RS256") return null;
+
+    const now = Math.floor(Date.now() / 1000);
+    if (payload.exp && payload.exp < now) return null;
+    if (payload.nbf && payload.nbf > now + 60) return null;
+
+    const issuer = payload.iss;
+    if (!issuer) return null;
+
+    const jwks = await fetchJwks(issuer);
+    const key = jwks.keys?.find((k: any) => k.kid === header.kid && k.kty === "RSA");
+    if (!key) return null;
+
+    const cryptoKey = await crypto.subtle.importKey(
+      "jwk",
+      { kty: key.kty, n: key.n, e: key.e, alg: "RS256", ext: true },
+      { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+      false,
+      ["verify"]
+    );
+
+    const signatureBytes = base64UrlDecode(parts[2]);
+    const dataBytes = new TextEncoder().encode(`${parts[0]}.${parts[1]}`);
+    const isValid = await crypto.subtle.verify(
+      "RSASSA-PKCS1-v1_5",
+      cryptoKey,
+      signatureBytes,
+      dataBytes
+    );
+
+    if (!isValid) return null;
     return payload.sub || null;
-  } catch {
+  } catch (err) {
+    console.error("JWT verification error:", err);
     return null;
   }
+}
+
+function isValidUUID(str: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
 }
 
 Deno.serve(async (req) => {
@@ -42,21 +97,27 @@ Deno.serve(async (req) => {
     }
 
     const token = authHeader.replace("Bearer ", "");
-    const userId = await verifyClerkToken(
-      token,
-      Deno.env.get("CLERK_SECRET_KEY")!
-    );
-
+    const userId = await verifyClerkJWT(token);
     if (!userId) {
-      return new Response(JSON.stringify({ error: "Invalid token" }), {
+      return new Response(JSON.stringify({ error: "Invalid or expired token" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const { courseId } = await req.json();
-    if (!courseId) {
+    const body = await req.json();
+    const courseId = body?.courseId;
+
+    // Validate courseId format
+    if (!courseId || typeof courseId !== "string") {
       return new Response(JSON.stringify({ error: "courseId required" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (!isValidUUID(courseId)) {
+      return new Response(JSON.stringify({ error: "Invalid courseId format" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -163,7 +224,7 @@ Deno.serve(async (req) => {
     );
   } catch (error) {
     console.error("Enrollment error:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
