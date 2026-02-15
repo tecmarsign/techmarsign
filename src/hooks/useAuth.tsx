@@ -57,13 +57,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return;
         }
 
-        const { data } = await supabase.functions.invoke("user-data", {
-          headers: { Authorization: `Bearer ${token}` },
-          body: null,
-          method: "GET",
-        });
-
-        // Use query param approach instead
         const response = await fetch(
           `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/user-data?resource=role`,
           {
