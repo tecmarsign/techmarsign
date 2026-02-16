@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { adminApi } from "@/lib/adminApi";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -42,6 +43,7 @@ interface PhaseManagerProps {
 }
 
 export function PhaseManager({ courseId, courseTitle, onBack }: PhaseManagerProps) {
+  const { getToken } = useAuth();
   const [phases, setPhases] = useState<Phase[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -56,11 +58,10 @@ export function PhaseManager({ courseId, courseTitle, onBack }: PhaseManagerProp
   }, [courseId]);
 
   const fetchPhases = async () => {
-    const { data, error } = await supabase
-      .from("course_phases")
-      .select("*")
-      .eq("course_id", courseId)
-      .order("phase_number", { ascending: true });
+    const { data, error } = await adminApi<Phase[]>(
+      { action: "select", table: "course_phases", filters: [{ column: "course_id", op: "eq", value: courseId }], order: { column: "phase_number", ascending: true } },
+      getToken
+    );
 
     if (error) {
       toast.error("Failed to fetch phases");
@@ -72,8 +73,8 @@ export function PhaseManager({ courseId, courseTitle, onBack }: PhaseManagerProp
 
   const handleOpenCreate = () => {
     setEditingPhase(null);
-    const nextPhaseNumber = phases.length > 0 
-      ? Math.max(...phases.map(p => p.phase_number)) + 1 
+    const nextPhaseNumber = phases.length > 0
+      ? Math.max(...phases.map(p => p.phase_number)) + 1
       : 1;
     setFormData({ ...defaultFormData, phase_number: nextPhaseNumber.toString() });
     setDialogOpen(true);
@@ -108,7 +109,6 @@ export function PhaseManager({ courseId, courseTitle, onBack }: PhaseManagerProp
       return;
     }
 
-    // Check for duplicate phase numbers (excluding current phase when editing)
     const isDuplicate = phases.some(
       p => p.phase_number === phaseNumber && p.id !== editingPhase?.id
     );
@@ -129,11 +129,10 @@ export function PhaseManager({ courseId, courseTitle, onBack }: PhaseManagerProp
     };
 
     if (editingPhase) {
-      const { error } = await supabase
-        .from("course_phases")
-        .update(phaseData)
-        .eq("id", editingPhase.id);
-
+      const { error } = await adminApi(
+        { action: "update", table: "course_phases", data: phaseData, filters: [{ column: "id", op: "eq", value: editingPhase.id }] },
+        getToken
+      );
       if (error) {
         toast.error("Failed to update phase");
       } else {
@@ -142,10 +141,10 @@ export function PhaseManager({ courseId, courseTitle, onBack }: PhaseManagerProp
         fetchPhases();
       }
     } else {
-      const { error } = await supabase
-        .from("course_phases")
-        .insert(phaseData);
-
+      const { error } = await adminApi(
+        { action: "insert", table: "course_phases", data: phaseData },
+        getToken
+      );
       if (error) {
         toast.error("Failed to create phase");
       } else {
@@ -161,10 +160,10 @@ export function PhaseManager({ courseId, courseTitle, onBack }: PhaseManagerProp
   const handleDelete = async () => {
     if (!deletingPhase) return;
 
-    const { error } = await supabase
-      .from("course_phases")
-      .delete()
-      .eq("id", deletingPhase.id);
+    const { error } = await adminApi(
+      { action: "delete", table: "course_phases", filters: [{ column: "id", op: "eq", value: deletingPhase.id }] },
+      getToken
+    );
 
     if (error) {
       toast.error("Failed to delete phase. It may have associated data.");
@@ -247,7 +246,6 @@ export function PhaseManager({ courseId, courseTitle, onBack }: PhaseManagerProp
         </>
       )}
 
-      {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -260,54 +258,24 @@ export function PhaseManager({ courseId, courseTitle, onBack }: PhaseManagerProp
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="phase_number">Phase Number *</Label>
-                <Input
-                  id="phase_number"
-                  type="number"
-                  min="1"
-                  value={formData.phase_number}
-                  onChange={(e) => setFormData({ ...formData, phase_number: e.target.value })}
-                  placeholder="1"
-                />
+                <Input id="phase_number" type="number" min="1" value={formData.phase_number} onChange={(e) => setFormData({ ...formData, phase_number: e.target.value })} placeholder="1" />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="price">Price ($)</Label>
-                <Input
-                  id="price"
-                  type="number"
-                  step="0.01"
-                  value={formData.price}
-                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                  placeholder="0.00"
-                />
+                <Input id="price" type="number" step="0.01" value={formData.price} onChange={(e) => setFormData({ ...formData, price: e.target.value })} placeholder="0.00" />
               </div>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="title">Title *</Label>
-              <Input
-                id="title"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                placeholder="e.g., Introduction, Advanced Topics"
-              />
+              <Input id="title" value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} placeholder="e.g., Introduction, Advanced Topics" />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="What will students learn in this phase?"
-                rows={3}
-              />
+              <Textarea id="description" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} placeholder="What will students learn in this phase?" rows={3} />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="duration">Duration</Label>
-              <Input
-                id="duration"
-                value={formData.duration}
-                onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-                placeholder="e.g., 2 weeks, 10 hours"
-              />
+              <Input id="duration" value={formData.duration} onChange={(e) => setFormData({ ...formData, duration: e.target.value })} placeholder="e.g., 2 weeks, 10 hours" />
             </div>
           </div>
           <DialogFooter>
@@ -319,7 +287,6 @@ export function PhaseManager({ courseId, courseTitle, onBack }: PhaseManagerProp
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
