@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { adminApi } from "@/lib/adminApi";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -46,6 +47,7 @@ const defaultFormData: CourseFormData = {
 };
 
 export function CourseManager() {
+  const { getToken } = useAuth();
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -61,11 +63,10 @@ export function CourseManager() {
   }, []);
 
   const fetchCourses = async () => {
-    // Fetch courses with phase count
-    const { data: coursesData, error: coursesError } = await supabase
-      .from("courses")
-      .select("*")
-      .order("created_at", { ascending: false });
+    const { data: coursesData, error: coursesError } = await adminApi<Course[]>(
+      { action: "select", table: "courses", order: { column: "created_at", ascending: false } },
+      getToken
+    );
 
     if (coursesError) {
       toast.error("Failed to fetch courses");
@@ -73,10 +74,10 @@ export function CourseManager() {
       return;
     }
 
-    // Fetch phase counts for all courses
-    const { data: phasesData } = await supabase
-      .from("course_phases")
-      .select("course_id");
+    const { data: phasesData } = await adminApi<{ course_id: string }[]>(
+      { action: "select", table: "course_phases", select: "course_id" },
+      getToken
+    );
 
     const phaseCounts: Record<string, number> = {};
     phasesData?.forEach(p => {
@@ -128,22 +129,18 @@ export function CourseManager() {
       toast.error("Title and category are required");
       return;
     }
-
     if (trimmedTitle.length > 200) {
       toast.error("Title is too long (max 200 characters)");
       return;
     }
-
     if (trimmedCategory.length > 100) {
       toast.error("Category is too long (max 100 characters)");
       return;
     }
-
     if (trimmedDescription && trimmedDescription.length > 10000) {
       toast.error("Description is too long (max 10,000 characters)");
       return;
     }
-
     if (trimmedImageUrl && !/^https:\/\/.+/.test(trimmedImageUrl)) {
       toast.error("Image URL must start with https://");
       return;
@@ -162,11 +159,10 @@ export function CourseManager() {
     };
 
     if (editingCourse) {
-      const { error } = await supabase
-        .from("courses")
-        .update(courseData)
-        .eq("id", editingCourse.id);
-
+      const { error } = await adminApi(
+        { action: "update", table: "courses", data: courseData, filters: [{ column: "id", op: "eq", value: editingCourse.id }] },
+        getToken
+      );
       if (error) {
         toast.error("Failed to update course");
       } else {
@@ -175,10 +171,10 @@ export function CourseManager() {
         fetchCourses();
       }
     } else {
-      const { error } = await supabase
-        .from("courses")
-        .insert(courseData);
-
+      const { error } = await adminApi(
+        { action: "insert", table: "courses", data: courseData },
+        getToken
+      );
       if (error) {
         toast.error("Failed to create course");
       } else {
@@ -194,10 +190,10 @@ export function CourseManager() {
   const handleDelete = async () => {
     if (!deletingCourse) return;
 
-    const { error } = await supabase
-      .from("courses")
-      .delete()
-      .eq("id", deletingCourse.id);
+    const { error } = await adminApi(
+      { action: "delete", table: "courses", filters: [{ column: "id", op: "eq", value: deletingCourse.id }] },
+      getToken
+    );
 
     if (error) {
       toast.error("Failed to delete course. It may have associated data.");
@@ -209,21 +205,20 @@ export function CourseManager() {
   };
 
   const handleToggleActive = async (course: Course) => {
-    const { error } = await supabase
-      .from("courses")
-      .update({ is_active: !course.is_active })
-      .eq("id", course.id);
+    const { error } = await adminApi(
+      { action: "update", table: "courses", data: { is_active: !course.is_active }, filters: [{ column: "id", op: "eq", value: course.id }] },
+      getToken
+    );
 
     if (error) {
       toast.error("Failed to update course status");
     } else {
-      setCourses(courses.map(c => 
+      setCourses(courses.map(c =>
         c.id === course.id ? { ...c, is_active: !c.is_active } : c
       ));
     }
   };
 
-  // If managing phases for a course, show the PhaseManager
   if (managingPhasesFor) {
     return (
       <Card>
@@ -233,7 +228,7 @@ export function CourseManager() {
             courseTitle={managingPhasesFor.title}
             onBack={() => {
               setManagingPhasesFor(null);
-              fetchCourses(); // Refresh to update phase counts
+              fetchCourses();
             }}
           />
         </CardContent>
@@ -277,9 +272,9 @@ export function CourseManager() {
                   <TableCell>{course.duration || "-"}</TableCell>
                   <TableCell>{course.price ? `$${course.price}` : "Free"}</TableCell>
                   <TableCell>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       className="gap-1"
                       onClick={() => setManagingPhasesFor(course)}
                     >
@@ -288,7 +283,7 @@ export function CourseManager() {
                     </Button>
                   </TableCell>
                   <TableCell>
-                    <Badge 
+                    <Badge
                       variant={course.is_active ? "default" : "secondary"}
                       className="cursor-pointer"
                       onClick={() => handleToggleActive(course)}
@@ -324,69 +319,33 @@ export function CourseManager() {
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
                 <Label htmlFor="title">Title *</Label>
-                <Input
-                  id="title"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  placeholder="Course title"
-                />
+                <Input id="title" value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} placeholder="Course title" />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="category">Category *</Label>
-                <Input
-                  id="category"
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  placeholder="e.g., Development, Design"
-                />
+                <Input id="category" value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })} placeholder="e.g., Development, Design" />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Course description"
-                  rows={3}
-                />
+                <Textarea id="description" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} placeholder="Course description" rows={3} />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="duration">Duration</Label>
-                  <Input
-                    id="duration"
-                    value={formData.duration}
-                    onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-                    placeholder="e.g., 8 weeks"
-                  />
+                  <Input id="duration" value={formData.duration} onChange={(e) => setFormData({ ...formData, duration: e.target.value })} placeholder="e.g., 8 weeks" />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="price">Price ($)</Label>
-                  <Input
-                    id="price"
-                    type="number"
-                    value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                    placeholder="0"
-                  />
+                  <Input id="price" type="number" value={formData.price} onChange={(e) => setFormData({ ...formData, price: e.target.value })} placeholder="0" />
                 </div>
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="image_url">Image URL</Label>
-                <Input
-                  id="image_url"
-                  value={formData.image_url}
-                  onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                  placeholder="https://..."
-                />
+                <Input id="image_url" value={formData.image_url} onChange={(e) => setFormData({ ...formData, image_url: e.target.value })} placeholder="https://..." />
               </div>
               <div className="flex items-center justify-between">
                 <Label htmlFor="is_active">Active</Label>
-                <Switch
-                  id="is_active"
-                  checked={formData.is_active}
-                  onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
-                />
+                <Switch id="is_active" checked={formData.is_active} onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })} />
               </div>
             </div>
             <DialogFooter>

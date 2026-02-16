@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { adminApi } from "@/lib/adminApi";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
@@ -24,16 +24,20 @@ interface Course {
   category: string;
 }
 
-interface TutorCourse {
+interface TutorCourseRaw {
   id: string;
   tutor_id: string;
   course_id: string;
   assigned_at: string;
+}
+
+interface TutorCourse extends TutorCourseRaw {
   tutor: Tutor;
   course: Course;
 }
 
 export function TutorAssignment() {
+  const { getToken } = useAuth();
   const [tutorCourses, setTutorCourses] = useState<TutorCourse[]>([]);
   const [tutors, setTutors] = useState<Tutor[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
@@ -49,75 +53,59 @@ export function TutorAssignment() {
 
   const fetchData = async () => {
     // Fetch tutors (users with tutor role)
-    const { data: rolesData } = await supabase
-      .from("user_roles")
-      .select("user_id")
-      .eq("role", "tutor");
+    const { data: rolesData } = await adminApi<{ user_id: string }[]>(
+      { action: "select", table: "user_roles", select: "user_id", filters: [{ column: "role", op: "eq", value: "tutor" }] },
+      getToken
+    );
 
     if (rolesData && rolesData.length > 0) {
       const tutorIds = rolesData.map(r => r.user_id);
-      const { data: profilesData } = await supabase
-        .from("profiles")
-        .select("user_id, full_name, email, avatar_url")
-        .in("user_id", tutorIds);
-
-      if (profilesData) {
-        setTutors(profilesData.map(p => ({
-          user_id: p.user_id,
-          full_name: p.full_name,
-          email: p.email,
-          avatar_url: p.avatar_url
-        })));
-      }
+      const { data: profilesData } = await adminApi<Tutor[]>(
+        { action: "select", table: "profiles", select: "user_id, full_name, email, avatar_url", filters: [{ column: "user_id", op: "in", value: tutorIds }] },
+        getToken
+      );
+      if (profilesData) setTutors(profilesData);
     }
 
     // Fetch courses
-    const { data: coursesData } = await supabase
-      .from("courses")
-      .select("id, title, category")
-      .eq("is_active", true);
+    const { data: coursesData } = await adminApi<Course[]>(
+      { action: "select", table: "courses", select: "id, title, category", filters: [{ column: "is_active", op: "eq", value: true }] },
+      getToken
+    );
+    if (coursesData) setCourses(coursesData);
 
-    if (coursesData) {
-      setCourses(coursesData);
-    }
-
-    // Fetch tutor-course assignments
     await fetchAssignments();
     setLoading(false);
   };
 
   const fetchAssignments = async () => {
-    const { data: assignmentsData } = await supabase
-      .from("tutor_courses")
-      .select(`
-        id,
-        tutor_id,
-        course_id,
-        assigned_at,
-        courses(id, title, category)
-      `);
+    const { data: assignmentsData } = await adminApi<TutorCourseRaw[]>(
+      { action: "select", table: "tutor_courses" },
+      getToken
+    );
 
     if (assignmentsData && assignmentsData.length > 0) {
       const tutorIds = [...new Set(assignmentsData.map(a => a.tutor_id))];
-      const { data: profilesData } = await supabase
-        .from("profiles")
-        .select("user_id, full_name, email, avatar_url")
-        .in("user_id", tutorIds);
+      const courseIds = [...new Set(assignmentsData.map(a => a.course_id))];
 
-      const enriched = assignmentsData.map(a => {
-        const tutor = profilesData?.find(p => p.user_id === a.tutor_id);
+      const [profilesRes, coursesRes] = await Promise.all([
+        adminApi<Tutor[]>(
+          { action: "select", table: "profiles", select: "user_id, full_name, email, avatar_url", filters: [{ column: "user_id", op: "in", value: tutorIds }] },
+          getToken
+        ),
+        adminApi<Course[]>(
+          { action: "select", table: "courses", select: "id, title, category", filters: [{ column: "id", op: "in", value: courseIds }] },
+          getToken
+        ),
+      ]);
+
+      const enriched: TutorCourse[] = assignmentsData.map(a => {
+        const tutor = profilesRes.data?.find(p => p.user_id === a.tutor_id);
+        const course = coursesRes.data?.find(c => c.id === a.course_id);
         return {
-          id: a.id,
-          tutor_id: a.tutor_id,
-          course_id: a.course_id,
-          assigned_at: a.assigned_at,
-          tutor: tutor ? {
-            user_id: tutor.user_id,
-            full_name: tutor.full_name,
-            email: tutor.email,
-            avatar_url: tutor.avatar_url
-          } : { user_id: "", full_name: "Unknown", email: "", avatar_url: null },
-          course: a.courses as unknown as Course
+          ...a,
+          tutor: tutor || { user_id: "", full_name: "Unknown", email: "", avatar_url: null },
+          course: course || { id: "", title: "Unknown", category: "" },
         };
       });
 
@@ -133,11 +121,9 @@ export function TutorAssignment() {
       return;
     }
 
-    // Check if assignment already exists
     const existing = tutorCourses.find(
       tc => tc.tutor_id === selectedTutor && tc.course_id === selectedCourse
     );
-
     if (existing) {
       toast.error("This tutor is already assigned to this course");
       return;
@@ -145,12 +131,10 @@ export function TutorAssignment() {
 
     setSaving(true);
 
-    const { error } = await supabase
-      .from("tutor_courses")
-      .insert({
-        tutor_id: selectedTutor,
-        course_id: selectedCourse
-      });
+    const { error } = await adminApi(
+      { action: "insert", table: "tutor_courses", data: { tutor_id: selectedTutor, course_id: selectedCourse } },
+      getToken
+    );
 
     if (error) {
       toast.error("Failed to assign tutor");
@@ -166,10 +150,10 @@ export function TutorAssignment() {
   };
 
   const handleRemove = async (id: string) => {
-    const { error } = await supabase
-      .from("tutor_courses")
-      .delete()
-      .eq("id", id);
+    const { error } = await adminApi(
+      { action: "delete", table: "tutor_courses", filters: [{ column: "id", op: "eq", value: id }] },
+      getToken
+    );
 
     if (error) {
       toast.error("Failed to remove assignment");
@@ -183,7 +167,6 @@ export function TutorAssignment() {
     return name.split(" ").map(n => n[0]).join("").toUpperCase();
   };
 
-  // Group assignments by tutor
   const assignmentsByTutor = tutorCourses.reduce((acc, tc) => {
     if (!acc[tc.tutor_id]) {
       acc[tc.tutor_id] = { tutor: tc.tutor, courses: [] };
@@ -233,10 +216,7 @@ export function TutorAssignment() {
                   {courses.map(({ id, course }) => (
                     <Badge key={id} variant="secondary" className="flex items-center gap-1">
                       {course.title}
-                      <button
-                        onClick={() => handleRemove(id)}
-                        className="ml-1 hover:text-destructive"
-                      >
+                      <button onClick={() => handleRemove(id)} className="ml-1 hover:text-destructive">
                         <Trash2 className="h-3 w-3" />
                       </button>
                     </Badge>
@@ -247,22 +227,17 @@ export function TutorAssignment() {
           </div>
         )}
 
-        {/* Assign Dialog */}
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Assign Tutor to Course</DialogTitle>
-              <DialogDescription>
-                Select a tutor and a course to create an assignment
-              </DialogDescription>
+              <DialogDescription>Select a tutor and a course to create an assignment</DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
                 <Label>Tutor</Label>
                 <Select value={selectedTutor} onValueChange={setSelectedTutor}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a tutor" />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Select a tutor" /></SelectTrigger>
                   <SelectContent>
                     {tutors.map((tutor) => (
                       <SelectItem key={tutor.user_id} value={tutor.user_id}>
@@ -275,9 +250,7 @@ export function TutorAssignment() {
               <div className="grid gap-2">
                 <Label>Course</Label>
                 <Select value={selectedCourse} onValueChange={setSelectedCourse}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a course" />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Select a course" /></SelectTrigger>
                   <SelectContent>
                     {courses.map((course) => (
                       <SelectItem key={course.id} value={course.id}>
