@@ -118,10 +118,10 @@ export function Footer() {
               <li className="flex items-center gap-3">
                 <Mail className="h-5 w-5 text-secondary shrink-0" />
                 <a
-                  href="mailto:info@tecmarsign.academy"
+                  href="mailto:info@tecmarsign.com"
                   className="text-primary-foreground/70 hover:text-secondary transition-colors text-sm"
                 >
-                  info@tecmarsign.academy
+                  info@tecmarsign.com
                 </a>
               </li>
             </ul>
