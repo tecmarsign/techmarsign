@@ -25,7 +25,7 @@ const contactInfo = [
   {
     icon: Mail,
     title: "Email Us",
-    details: ["info@tecmarsign.com", "admissions@tecmarsign.com", "support@tecmarsign.com"],
+    details: ["info@tecmarsign.com", "admissions@tecmarsign.com"],
   },
 ];
 
