@@ -31,6 +31,7 @@ function parseWeeklyContent(description: string): { week: number; content: strin
 export function CourseDetailView({ course }: CourseDetailViewProps) {
   const phases = course.course_phases || [];
   const [activePhase, setActivePhase] = useState(0);
+  const isAI = course.category?.toLowerCase() === "ai" || course.title.toLowerCase().includes("ai");
 
   const currentPhase = phases[activePhase];
 
@@ -38,9 +39,16 @@ export function CourseDetailView({ course }: CourseDetailViewProps) {
     <div className="space-y-8">
       {/* Course Header */}
       <div className="text-center max-w-3xl mx-auto">
-        <Badge variant="secondary" className="mb-4">
-          {course.category}
-        </Badge>
+        <div className="flex items-center justify-center gap-2 mb-4">
+          <Badge variant="secondary">
+            {course.category}
+          </Badge>
+          {isAI && (
+            <Badge variant="secondary" className="bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-500 text-white border-0">
+              Powered by Google Gemini & LLMs
+            </Badge>
+          )}
+        </div>
         <h1 className="font-display text-4xl md:text-5xl font-bold text-foreground mb-4">
           {course.title}
         </h1>
@@ -159,6 +167,19 @@ export function CourseDetailView({ course }: CourseDetailViewProps) {
 
           {/* Sidebar */}
           <div className="space-y-6">
+            {isAI && (
+              <div className="p-4 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 shadow-sm relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-4 opacity-10">
+                  <svg className="w-16 h-16 text-blue-600" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zm0 7.5l-10-5v3.5l10 5 10-5v-3.5l-10 5z" /></svg>
+                </div>
+                <h4 className="font-bold text-blue-900 mb-2 flex items-center gap-2">
+                  <span className="text-lg">🎁</span> Google AI Special Offer
+                </h4>
+                <p className="text-sm text-blue-800 leading-relaxed">
+                  Pay the full amount at <strong>KSH 42,000</strong> to get <strong className="text-blue-700">two months FREE Google AI subscription</strong>! Build alongside world-class models.
+                </p>
+              </div>
+            )}
             <Card className="border-border/50 shadow-card sticky top-24">
               <CardHeader>
                 <h3 className="font-display text-xl font-bold text-foreground">

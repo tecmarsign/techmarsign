@@ -13,6 +13,7 @@ interface CourseCardProps {
 
 export function CourseCard({ course, variant = "full" }: CourseCardProps) {
   const phaseCount = course.course_phases?.length || 0;
+  const isAI = course.category?.toLowerCase() === "ai" || course.title.toLowerCase().includes("ai");
 
   if (variant === "compact") {
     return (
@@ -23,7 +24,14 @@ export function CourseCard({ course, variant = "full" }: CourseCardProps) {
               <h3 className="font-display text-lg font-bold text-foreground">
                 {course.title}
               </h3>
-              <p className="text-sm text-muted-foreground">{course.category}</p>
+              <div className="flex items-center gap-2 mt-1">
+                <p className="text-sm text-muted-foreground">{course.category}</p>
+                {isAI && (
+                  <Badge variant="secondary" className="bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-500 text-white border-0 text-[10px] px-1.5 py-0 h-5">
+                    Powered by Google Gemini
+                  </Badge>
+                )}
+              </div>
             </div>
             {course.price && (
               <Badge variant="secondary">
@@ -64,10 +72,17 @@ export function CourseCard({ course, variant = "full" }: CourseCardProps) {
               <Users className="h-8 w-8" />
             </div>
             <div>
-              <h2 className="font-display text-3xl font-bold text-foreground">
+              <h2 className="font-display text-3xl font-bold text-foreground mb-2">
                 {course.title}
               </h2>
-              <p className="text-muted-foreground">{course.category}</p>
+              <div className="flex items-center gap-3">
+                <p className="text-muted-foreground">{course.category}</p>
+                {isAI && (
+                  <Badge variant="secondary" className="bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-500 text-white border-0">
+                    Linked to Google LLMs
+                  </Badge>
+                )}
+              </div>
             </div>
           </div>
           <p className="text-lg text-muted-foreground leading-relaxed">
@@ -141,6 +156,19 @@ export function CourseCard({ course, variant = "full" }: CourseCardProps) {
 
       {/* Sidebar */}
       <div className="space-y-6">
+        {isAI && (
+          <div className="p-4 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 shadow-sm relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-4 opacity-10">
+              <svg className="w-16 h-16 text-blue-600" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zm0 7.5l-10-5v3.5l10 5 10-5v-3.5l-10 5z" /></svg>
+            </div>
+            <h4 className="font-bold text-blue-900 mb-2 flex items-center gap-2">
+              <span className="text-lg">🎁</span> Google AI Special Offer
+            </h4>
+            <p className="text-sm text-blue-800 leading-relaxed">
+              Pay the full amount at <strong>KSH 42,000</strong> to get <strong className="text-blue-700">two months FREE Google AI subscription</strong>! Build alongside world-class models.
+            </p>
+          </div>
+        )}
         <Card className="border-border/50 shadow-card sticky top-24">
           <CardHeader>
             <h3 className="font-display text-xl font-bold text-foreground">
